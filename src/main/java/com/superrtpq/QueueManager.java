@@ -180,13 +180,11 @@ public final class QueueManager implements Listener {
 
             WorldSelection selection = selectDestination();
             if (selection.location == null) {
-                // Do not block the queue forever: fail this attempt and put the player at the back.
-                queue.pollFirst();
-                queue.addLast(id);
-                messages.send(player, "failed");
-                plugin.debug("No safe destination found for " + player.getName());
-                processed++;
-                continue;
+                // Keep the player queued, but do not send a failure message every tick.
+                // Retry on the next processing interval and only log when debug is enabled.
+                plugin.debug("No safe destination found for " + player.getName()
+                        + ". Check rtp.worlds, world border, distance and safe-location settings.");
+                return;
             }
 
             queue.pollFirst();
