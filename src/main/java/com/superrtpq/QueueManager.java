@@ -121,6 +121,12 @@ public final class QueueManager implements Listener {
     }
 
     public void applyCooldown(Player player) {
+        long cooldownMillis = Math.max(0L,
+                plugin.getConfig().getLong("queue.cooldown-seconds", 60)) * 1000L;
+        cooldowns.put(player.getUniqueId(), System.currentTimeMillis() + cooldownMillis);
+    }
+
+    public void applyCooldown(Player player) {
         long millis = Math.max(0L, plugin.getConfig().getLong("queue.cooldown-seconds", 60)) * 1000L;
         cooldowns.put(player.getUniqueId(), System.currentTimeMillis() + millis);
     }
