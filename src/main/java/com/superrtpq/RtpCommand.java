@@ -1,6 +1,8 @@
 package com.superrtpq;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -21,8 +23,8 @@ import java.util.List;
 import java.util.Map;
 
 final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
-    private static final String RTP_GUI = "§5§lRandom Teleport";
-    private static final String QUEUE_GUI = "§5§lRTP Queue";
+    private static final String RTP_GUI = "Random Teleport";
+    private static final String QUEUE_GUI = "RTP Queue";
     private final SuperRTPQ plugin;
     private final QueueManager queue;
     private final TeleportService teleports;
@@ -132,7 +134,7 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
     }
 
     private void openRtpGui(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 27, Component.text(RTP_GUI));
+        Inventory inv = Bukkit.createInventory(null, 27, Component.text(RTP_GUI).decoration(TextDecoration.ITALIC, false));
         inv.setItem(10, dimensionItem(Material.GRASS_BLOCK, "overworld", "Random teleport in the normal world."));
         inv.setItem(13, dimensionItem(Material.NETHERRACK, "nether", "Random teleport in the Nether."));
         inv.setItem(16, dimensionItem(Material.END_STONE, "end", "Random teleport in The End."));
@@ -141,7 +143,7 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
     }
 
     private void openQueueGui(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 27, Component.text(QUEUE_GUI));
+        Inventory inv = Bukkit.createInventory(null, 27, Component.text(QUEUE_GUI).decoration(TextDecoration.ITALIC, false));
         int position = queue.position(player.getUniqueId());
         inv.setItem(10, item(Material.LIME_DYE, "§a§lJoin Queue", "§7Join the RTP 1v1 queue.", "§7Your position: §f" + (position == 0 ? "Not queued" : position), "§aClick to join"));
         inv.setItem(13, item(Material.PAPER, "§d§lQueue Status", "§7Players waiting: §f" + queue.size(), "§7Your position: §f" + (position == 0 ? "Not queued" : position)));
@@ -153,8 +155,8 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
     private ItemStack item(Material material, String name, String... lore) {
         ItemStack stack = new ItemStack(material);
         ItemMeta meta = stack.getItemMeta();
-        meta.setDisplayName(name);
-        meta.setLore(List.of(lore));
+        meta.displayName(LegacyComponentSerializer.legacySection().deserialize(name).decoration(TextDecoration.ITALIC, false));
+        meta.lore(List.of(lore).stream().map(line -> LegacyComponentSerializer.legacySection().deserialize(line).decoration(TextDecoration.ITALIC, false)).toList());
         stack.setItemMeta(meta);
         return stack;
     }
