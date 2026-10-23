@@ -15,7 +15,7 @@ rtp:
     - world
   min-distance: 1500
   max-distance: 10000
-  max-attempts: 24
+  max-attempts: 100
   min-y: 5
   max-y: 320
   avoid-water: true
@@ -24,7 +24,7 @@ rtp:
   require-solid-ground: true
   border-margin: 16
   respect-world-border: true
-  load-chunks: false
+  load-chunks: true
 
 messages:
   prefix: '<dark_gray>[<light_purple>SuperRTPQ</light_purple>]</dark_gray> '
@@ -39,7 +39,7 @@ messages:
   searching: '<gray>Finding a safe random location...</gray>'
   countdown: '<light_purple>Teleporting in <white>%seconds%</white>...</light_purple>'
   teleported: '<green>Random teleport complete!</green>'
-  failed: '<red>Could not find a safe location. You have been returned to the queue.</red>'
+  failed: '<red>Could not find a safe location right now. Please try again in a moment.</red>'
   no-world: '<red>No configured RTP world is available.</red>'
   no-permission: '<red>You do not have permission to do that.</red>'
   player-only: '<red>This command can only be used in-game.</red>'
