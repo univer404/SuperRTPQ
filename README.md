@@ -1,55 +1,118 @@
 # SuperRTPQ
 
-SuperRTPQ is a Java/Maven Minecraft plugin that implements a configurable FIFO random-teleport queue for Paper and Purpur. It is an original implementation inspired by common server RTP queue behavior; it does not use DonutSMP source code, private assets, or proprietary fonts.
+**Random teleport, three dimension choices, and a FIFO 1v1 RTP queue** for Paper/Purpur servers. Designed to be easy to configure, with compact inventory menus and clear feedback.
+
+## Highlights
+
+- **Three-dimension RTP menu:** Overworld, Nether, and End, each showing its configured world and world-border size.
+- **Safe-location search:** Bounded search with checks for passable feet/head space, solid ground, water, lava, fire and border margins.
+- **RTP queue:** FIFO queue pairs two waiting online players for a paired teleport, with an optional countdown and movement cancellation.
+- **Separate queue menu:** Join, check status, and leave without mixing queue actions with dimension selection.
+- **Configurable:** World names, search distance, safety checks, queue limits, cooldown, countdown, and MiniMessage chat messages.
+- **Admin tools:** Inspect queue/world status, clear the queue, remove a player, force a teleport, reload config, and toggle debug logging.
+- **Straight GUI text:** GUI titles, item names, and lore explicitly disable Minecraft's default italic decoration.
 
 ## Requirements
 
 - Java 21
-- Maven 3.9+
-- Paper or Purpur compatible with the Paper 1.21.4 API line
-- A configured world loaded by the server
+- Paper or compatible Purpur server on the Paper 1.21.4 API line
+- Correctly loaded worlds configured for RTP
 
-## Build
+No Vault, PlaceholderAPI, or other plugin is required by this implementation.
 
-Run from the project root:
+## Install
 
-```sh
-mvn clean package
-```
-
-The JAR should be created at `target/SuperRTPQ.jar`. Copy it into your server's `plugins` directory and restart. The plugin creates `plugins/SuperRTPQ/config.yml` on first launch.
+1. Download the `SuperRTPQ.jar` from a successful GitHub Actions build artifact.
+2. Put it in the server's `plugins/` folder.
+3. Start the server once so it creates `plugins/SuperRTPQ/config.yml`.
+4. Edit the world names and search settings in that live config.
+5. Restart or run `/rtpq admin reload`.
+6. Test on a staging world before using it on a public server.
 
 ## Commands
 
-| Command | Description |
+### Instant random teleport
+
+| Command | Behavior |
 | --- | --- |
-| `/rtp` or `/rtp join` | Join the queue |
-| `/rtp leave` | Leave the queue |
-| `/rtp status` | Show queue size and your position |
-| `/rtp gui` | Reserved GUI entry point; GUI is not implemented yet |
-| `/rtpq status` | Show current queue size |
-| `/rtpq clearqueue` | Clear all queue entries |
-| `/rtpq remove <player>` | Remove an online player from the queue |
-| `/rtpq forceteleport <player>` | Find a destination and teleport an online player |
-| `/rtpq reload` | Reload configuration and restart queue processing |
-| `/rtpq debug` | Toggle debug logging |
+| `/rtp` | Opens the dimension selection GUI. |
+| `/rtp gui` | Opens the dimension selection GUI. |
+| `/rtp now` or `/rtp random` | Instant RTP in the configured Overworld. |
+| `/rtp overworld` | Instant RTP in the configured Overworld. |
+| `/rtp nether` | Instant RTP in the configured Nether. |
+| `/rtp end` | Instant RTP in the configured End. |
+
+### Queue
+
+| Command | Behavior |
+| --- | --- |
+| `/rtpq` or `/rtpq gui` | Opens the queue menu. |
+| `/rtpq join` | Joins the waiting queue. |
+| `/rtpq leave` | Leaves the queue or cancels a paired countdown. |
+| `/rtpq status` | Shows queue size and your position. |
+
+### Admin
+
+| Command | Behavior |
+| --- | --- |
+| `/rtpq admin status` | Shows queue size and the fallback RTP world status. |
+| `/rtpq admin clearqueue` | Clears all queue entries and countdown pair states. |
+| `/rtpq admin remove <player>` | Removes an online player from the queue. |
+| `/rtpq admin forceteleport <player>` | Attempts a safe teleport in the first loaded fallback world. |
+| `/rtpq admin reload` | Reloads config and restarts queue processing. |
+| `/rtpq admin debug` | Toggles and saves debug logging. |
+
+The shorter admin aliases `/rtpq status`, `/rtpq clearqueue`, `/rtpq remove`, `/rtpq forceteleport`, `/rtpq reload`, and `/rtpq debug` are also recognized.
 
 ## Permissions
 
-- `superrtpq.use` — use the queue (default: everyone)
-- `superrtpq.admin` — use admin commands (default: operators)
-- `superrtpq.bypass.cooldown` — bypass the RTP cooldown (default: operators)
+| Permission | Default | Purpose |
+| --- | --- | --- |
+| `superrtpq.use` | Everyone | Use instant RTP and the dimension GUI. |
+| `superrtpq.queue.use` | Everyone | Use the queue and queue GUI. |
+| `superrtpq.admin` | Operators | Run admin commands. |
+| `superrtpq.bypass.cooldown` | Operators | Bypass the RTP cooldown. |
 
-## Configuration notes
+## Configuration
 
-Edit `plugins/SuperRTPQ/config.yml` and add your actual world name under `rtp.worlds`. By default, the plugin will not load new chunks while searching; a candidate is skipped if its chunk is not already loaded. Set `rtp.load-chunks: true` only after considering server performance and chunk-generation policy.
+The **live** configuration is `plugins/SuperRTPQ/config.yml`. A separately organized reference copy and explanations are in the `configuration/` folder of this repository.
 
-The destination search is bounded by `rtp.max-attempts`. If no safe location is found, the current player is moved to the back of the queue so other players can continue.
+Most important settings:
 
-## Current implementation status
+- `rtp.dimension-worlds.overworld/nether/end`: exact loaded world names for dimension RTP.
+- `rtp.worlds`: fallback world list for queue/admin forced teleport.
+- `rtp.min-distance` / `rtp.max-distance`: distance from the world-border center.
+- `rtp.max-attempts`: bounds each safe-location search.
+- `rtp.load-chunks`: allows chunk loading/generation when enabled; this may affect performance.
+- `rtp.respect-world-border` / `rtp.border-margin`: keep candidates inside the world border.
+- `queue.max-size`, `queue.cooldown-seconds`, `queue.countdown-seconds`, `queue.cancel-on-move`: queue behavior.
+- `messages`: MiniMessage prefix and chat strings.
+- `debug`: diagnostic logging.
 
-This is an initial development build, not a claim of production readiness. The basic queue, cooldown, countdown, bounded destination search, player commands, and admin commands have been added. The GUI, PlaceholderAPI integration, WorldGuard region exclusion, LuckPerms-specific integration, automated tests, and a live-server test pass are not implemented yet. Test on a staging server before using it on a public network.
+Use spaces for YAML indentation, not tabs. World names must match exactly. Nether/End dimensions are unavailable until their configured worlds are loaded.
 
-## Compatibility
+## Build from source
 
-The project currently targets Paper API 1.21.4 and Java 21. Compatibility with other Minecraft versions must be verified by building and testing against those versions. Test the exact Paper/Purpur build you plan to use.
+Requires JDK 21 and Maven:
+
+```sh
+mvn --batch-mode clean package
+```
+
+Output: `target/SuperRTPQ.jar`. GitHub Actions runs the same packaging command and publishes the JAR as a downloadable workflow artifact when the build succeeds.
+
+## Important behavior and limitations
+
+- The queue is an in-memory queue: entries and cooldowns do not persist across server restarts.
+- Queue pairing uses the same selected safe destination, placing the second player two blocks away. Check that both positions are suitable for the chosen terrain and gamemode.
+- Teleports and safe-location checks run on the server thread. Searching many locations or loading chunks can add tick time; keep attempt counts conservative.
+- WorldGuard region exclusions, PlaceholderAPI expansion, persistent queue storage, and a fully atomic two-player teleport are not implemented.
+- A successful build proves compilation/package success, not compatibility with every server build. Test your exact Paper/Purpur version and world setup before public release.
+
+## Project layout
+
+- `src/main/java/` — plugin behavior and commands.
+- `src/main/resources/config.yml` — default config bundled into the plugin.
+- `src/main/resources/plugin.yml` — commands and permissions.
+- `configuration/` — separate human-readable config reference and copy.
+- `.github/workflows/build.yml` — automated build workflow.
