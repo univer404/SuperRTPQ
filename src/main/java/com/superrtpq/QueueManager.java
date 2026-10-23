@@ -116,6 +116,15 @@ public final class QueueManager implements Listener {
         return queue.size();
     }
 
+    public long getCooldownRemaining(UUID id) {
+        return Math.max(0L, cooldowns.getOrDefault(id, 0L) - System.currentTimeMillis());
+    }
+
+    public void applyCooldown(Player player) {
+        long millis = Math.max(0L, plugin.getConfig().getLong("queue.cooldown-seconds", 60)) * 1000L;
+        cooldowns.put(player.getUniqueId(), System.currentTimeMillis() + millis);
+    }
+
     public boolean isQueued(UUID id) {
         return states.containsKey(id);
     }
