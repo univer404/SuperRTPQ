@@ -3,25 +3,25 @@ version: 0.2.0
 main: com.superrtpq.SuperRTPQ
 api-version: '1.21'
 authors: [univer404]
-description: Standalone random teleport and RTP queue system with GUI.
+description: Standalone random teleport and RTP queue with separate GUIs.
 commands:
   rtp:
-    description: Open the SuperRTPQ menu or use RTP commands.
-    usage: /rtp [join|leave|status|gui|now]
+    description: Random teleport command and GUI.
+    usage: /rtp [now|gui]
     aliases: [randomteleport]
   rtpq:
-    description: SuperRTPQ administrator commands.
-    usage: /rtpq <status|clearqueue|remove|forceteleport|reload|debug>
+    description: RTP queue command and separate GUI.
+    usage: /rtpq [gui|join|leave|status|admin]
 permissions:
   superrtpq.use:
-    description: Use the random teleport queue and GUI.
+    description: Use instant random teleport.
     default: true
-  superrtpq.instant:
-    description: Use /rtp now for an immediate random teleport.
-    default: op
+  superrtpq.queue.use:
+    description: Use the RTP queue and its GUI.
+    default: true
   superrtpq.admin:
-    description: Manage SuperRTPQ.
+    description: Manage SuperRTPQ administration commands.
     default: op
   superrtpq.bypass.cooldown:
-    description: Bypass the RTP cooldown.
+    description: Bypass random teleport cooldown.
     default: op
