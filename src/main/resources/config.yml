@@ -17,7 +17,7 @@ rtp:
   max-distance: 10000
   max-attempts: 24
   min-y: 5
-  max-y:  realm
+  max-y: 320
   avoid-water: true
   avoid-lava: true
   avoid-fire: true
