@@ -21,3 +21,11 @@ jobs:
           cache: maven
       - name: Compile and package
         run: mvn --batch-mode --no-transfer-progress clean package
+      - name: Upload compiled plugin
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SuperRTPQ
+          path: target/SuperRTPQ.jar
+          if-no-files-found: error
+          retention-days: 14
