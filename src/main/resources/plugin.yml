@@ -1,0 +1,25 @@
+name: SuperRTPQ
+version: 0.1.0-SNAPSHOT
+main: com.superrtpq.SuperRTPQ
+api-version: '1.21'
+authors: [univer404]
+description: A configurable random teleport queue for Paper and Purpur.
+softdepend: [PlaceholderAPI, WorldGuard, LuckPerms]
+commands:
+  rtp:
+    description: Join or manage the random teleport queue.
+    usage: /rtp [join|leave|status|gui]
+    aliases: [randomteleport]
+  rtpq:
+    description: SuperRTPQ administrator commands.
+    usage: /rtpq <status|clearqueue|remove|forceteleport|reload|debug>
+permissions:
+  superrtpq.use:
+    description: Use the random teleport queue.
+    default: true
+  superrtpq.admin:
+    description: Manage SuperRTPQ.
+    default: op
+  superrtpq.bypass.cooldown:
+    description: Bypass the RTP cooldown.
+    default: op
