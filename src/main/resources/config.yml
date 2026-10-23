@@ -10,7 +10,13 @@ queue:
   cancel-on-move: false
 
 rtp:
-  # World names to offer for random teleport. The first valid configured world is used by default.
+  # Set these to the exact loaded world names on your server.
+  # Common defaults: world, world_nether, world_the_end.
+  dimension-worlds:
+    overworld: world
+    nether: world_nether
+    end: world_the_end
+  # General fallback list used by queue/admin RTP.
   worlds:
     - world
   min-distance: 1500
