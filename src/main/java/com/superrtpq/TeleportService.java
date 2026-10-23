@@ -35,15 +35,17 @@ public final class TeleportService {
         for (int attempt = 0; attempt < attempts; attempt++) {
             double angle = random.nextDouble(0, Math.PI * 2);
             double distance = random.nextDouble(minDistance, maxDistance);
-            int x = (int) Math.round(Math.cos(angle) * distance);
-            int z = (int) Math.round(Math.sin(angle) * distance);
+            var border = world.getWorldBorder();
+            double centerX = border.getCenter().getX();
+            double centerZ = border.getCenter().getZ();
+            int x = (int) Math.round(centerX + Math.cos(angle) * distance);
+            int z = (int) Math.round(centerZ + Math.sin(angle) * distance);
 
             if (plugin.getConfig().getBoolean("rtp.respect-world-border", true)) {
-                var border = world.getWorldBorder();
                 double margin = Math.max(0, plugin.getConfig().getDouble("rtp.border-margin", 16));
                 double half = border.getSize() / 2.0 - margin;
-                if (half <= 0 || Math.abs(x - border.getCenter().getX()) > half
-                        || Math.abs(z - border.getCenter().getZ()) > half) continue;
+                if (half <= 0 || Math.abs(x - centerX) > half
+                        || Math.abs(z - centerZ) > half) continue;
             }
 
             int chunkX = x >> 4, chunkZ = z >> 4;
