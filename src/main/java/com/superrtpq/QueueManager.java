@@ -266,8 +266,10 @@ public final class QueueManager implements Listener {
             if (remaining[0] <= 0) {
                 Location firstDestination = destination.clone();
                 Location secondDestination = destination.clone().add(2.0, 0.0, 0.0);
+                Location firstOriginal = first.getLocation().clone();
+                Location secondOriginal = second.getLocation().clone();
                 boolean firstSuccess = teleportService.teleport(first, firstDestination);
-                boolean secondSuccess = teleportService.teleport(second, secondDestination);
+                boolean secondSuccess = firstSuccess && teleportService.teleport(second, secondDestination);
 
                 if (firstSuccess && secondSuccess) {
                     applyCooldown(first);
@@ -275,8 +277,11 @@ public final class QueueManager implements Listener {
                     first.sendMessage("§aRTP 1v1 match started! Your opponent is §f" + second.getName() + "§a.");
                     second.sendMessage("§aRTP 1v1 match started! Your opponent is §f" + first.getName() + "§a.");
                 } else {
-                    first.sendMessage("§cCould not teleport both players. Please try again.");
-                    second.sendMessage("§cCould not teleport both players. Please try again.");
+                    // Avoid leaving one player alone at the match destination if the other teleport fails.
+                    if (firstSuccess) first.teleport(firstOriginal);
+                    if (secondSuccess) second.teleport(secondOriginal);
+                    first.sendMessage("§cCould not teleport both players. You were returned to your previous location.");
+                    second.sendMessage("§cCould not teleport both players. You were returned to your previous location.");
                 }
                 clearPairState(firstId, secondId);
                 countdownTask.cancel();
