@@ -3,6 +3,7 @@ package com.superrtpq;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -57,9 +58,11 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         if (action.equals("gui") || action.equals("menu")) {
             openRtpGui(player);
         } else if (action.equals("now") || action.equals("random")) {
-            performInstantRtp(player);
+            performInstantRtp(player, "overworld");
+        } else if (List.of("overworld", "nether", "end").contains(action)) {
+            performInstantRtp(player, action);
         } else {
-            player.sendMessage("§dRandom Teleport §7Usage: §f/rtp [gui|now]");
+            player.sendMessage("§dRandom Teleport §7Usage: §f/rtp [gui|overworld|nether|end]");
         }
         return true;
     }
@@ -68,7 +71,7 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         return List.of("admin", "status", "clearqueue", "remove", "forceteleport", "reload", "debug").contains(action.toLowerCase());
     }
 
-    private void performInstantRtp(Player player) {
+    private void performInstantRtp(Player player, String dimension) {
         if (!player.hasPermission("superrtpq.bypass.cooldown")) {
             long remaining = plugin.getQueueManager().getCooldownRemaining(player.getUniqueId());
             if (remaining > 0) {
@@ -76,8 +79,11 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
                 return;
             }
         }
-        var world = teleports.findConfiguredWorld();
-        if (world == null) { messages.send(player, "no-world"); return; }
+        World world = getDimensionWorld(dimension);
+        if (world == null) {
+            player.sendMessage("§cThe " + dimensionName(dimension) + " world is not available. Check rtp.dimension-worlds in config.yml.");
+            return;
+        }
         messages.send(player, "searching");
         var destination = teleports.findSafeLocation(world);
         if (destination == null) { messages.send(player, "failed"); return; }
@@ -87,19 +93,59 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         } else messages.send(player, "failed");
     }
 
+    private World getDimensionWorld(String dimension) {
+        String configured = plugin.getConfig().getString("rtp.dimension-worlds." + dimension, defaultWorldName(dimension));
+        return Bukkit.getWorld(configured);
+    }
+
+    private String defaultWorldName(String dimension) {
+        return switch (dimension) {
+            case "nether" -> "world_nether";
+            case "end" -> "world_the_end";
+            default -> "world";
+        };
+    }
+
+    private String dimensionName(String dimension) {
+        return switch (dimension) {
+            case "nether" -> "Nether";
+            case "end" -> "The End";
+            default -> "Overworld";
+        };
+    }
+
+    private String borderDescription(World world) {
+        if (world == null) return "§cWorld not loaded / not configured";
+        double size = world.getWorldBorder().getSize();
+        return "§7Border: §f" + String.format(java.util.Locale.US, "%.0f", size) + " × " + String.format(java.util.Locale.US, "%.0f", size) + " blocks";
+    }
+
+    private ItemStack dimensionItem(Material material, String dimension, String subtitle) {
+        World world = getDimensionWorld(dimension);
+        String worldName = world == null ? defaultWorldName(dimension) : world.getName();
+        return item(material, "§d§l" + dimensionName(dimension),
+                "§7" + subtitle,
+                "§7World: §f" + worldName,
+                borderDescription(world),
+                "§8Uses this world's world border.",
+                world == null ? "§cClick unavailable until world is loaded" : "§aClick to teleport");
+    }
+
     private void openRtpGui(Player player) {
         Inventory inv = Bukkit.createInventory(null, 27, Component.text(RTP_GUI));
-        inv.setItem(11, item(Material.ENDER_PEARL, "§d§lRandom Teleport", "§7Teleport to a random safe location.", "§eThis is instant RTP, not the queue.", "§aClick to teleport"));
-        inv.setItem(15, item(Material.BARRIER, "§cClose", "§7Close this menu."));
+        inv.setItem(10, dimensionItem(Material.GRASS_BLOCK, "overworld", "Random teleport in the normal world."));
+        inv.setItem(13, dimensionItem(Material.NETHERRACK, "nether", "Random teleport in the Nether."));
+        inv.setItem(16, dimensionItem(Material.END_STONE, "end", "Random teleport in The End."));
+        inv.setItem(22, item(Material.BARRIER, "§cClose", "§7Close this menu."));
         player.openInventory(inv);
     }
 
     private void openQueueGui(Player player) {
         Inventory inv = Bukkit.createInventory(null, 27, Component.text(QUEUE_GUI));
         int position = queue.position(player.getUniqueId());
-        inv.setItem(10, item(Material.LIME_DYE, "§a§lJoin Queue", "§7Join the RTP queue.", "§7Your position: §f" + (position == 0 ? "Not queued" : position), "§aClick to join"));
+        inv.setItem(10, item(Material.LIME_DYE, "§a§lJoin Queue", "§7Join the RTP 1v1 queue.", "§7Your position: §f" + (position == 0 ? "Not queued" : position), "§aClick to join"));
         inv.setItem(13, item(Material.PAPER, "§d§lQueue Status", "§7Players waiting: §f" + queue.size(), "§7Your position: §f" + (position == 0 ? "Not queued" : position)));
-        inv.setItem(16, item(Material.RED_DYE, "§c§lLeave Queue", "§7Leave the RTP queue.", "§cClick to leave"));
+        inv.setItem(16, item(Material.RED_DYE, "§c§lLeave Queue", "§7Leave the RTP 1v1 queue.", "§cClick to leave"));
         inv.setItem(22, item(Material.COMPASS, "§b§lRandom Teleport", "§7For instant RTP, use §f/rtp§7.", "§7This menu is only for queue actions."));
         player.openInventory(inv);
     }
@@ -121,15 +167,20 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         event.setCancelled(true);
         if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) return;
         if (title.equals(RTP_GUI)) {
-            if (event.getRawSlot() == 11) { player.closeInventory(); performInstantRtp(player); }
-            else if (event.getRawSlot() == 15) player.closeInventory();
+            switch (event.getRawSlot()) {
+                case 10 -> { player.closeInventory(); performInstantRtp(player, "overworld"); }
+                case 13 -> { player.closeInventory(); performInstantRtp(player, "nether"); }
+                case 16 -> { player.closeInventory(); performInstantRtp(player, "end"); }
+                case 22 -> player.closeInventory();
+                default -> { }
+            }
             return;
         }
         switch (event.getRawSlot()) {
             case 10 -> { player.closeInventory(); queue.join(player); }
             case 13 -> { player.closeInventory(); sendQueueStatus(player); }
             case 16 -> { player.closeInventory(); queue.leave(player); }
-            case 22 -> { player.closeInventory(); player.sendMessage("§7Use §f/rtp §7for instant random teleport."); }
+            case 22 -> { player.closeInventory(); openRtpGui(player); }
             default -> { }
         }
     }
@@ -177,7 +228,7 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         if (command.getName().equalsIgnoreCase("rtpq")) {
             if (args.length == 1) return matching(args[0], List.of("gui", "join", "leave", "status", "admin"));
             if (args.length == 2 && args[0].equalsIgnoreCase("admin")) return matching(args[1], List.of("status", "clearqueue", "remove", "forceteleport", "reload", "debug"));
-        } else if (args.length == 1) return matching(args[0], List.of("gui", "now"));
+        } else if (args.length == 1) return matching(args[0], List.of("gui", "overworld", "nether", "end", "now"));
         return List.of();
     }
 
