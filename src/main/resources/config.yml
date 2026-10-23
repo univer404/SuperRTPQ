@@ -1,0 +1,53 @@
+# SuperRTPQ configuration. Restart or use /rtpq reload after editing.
+queue:
+  enabled: true
+  max-size: 100
+  process-interval-ticks: 20
+  position-update-seconds: 5
+  max-teleports-per-cycle: 1
+  cooldown-seconds: 60
+  countdown-seconds: 3
+  cancel-on-move: false
+
+rtp:
+  # World names to offer for random teleport. The first valid configured world is used by default.
+  worlds:
+    - world
+  min-distance: 1500
+  max-distance: 10000
+  max-attempts: 24
+  min-y: 5
+  max-y:  realm
+  avoid-water: true
+  avoid-lava: true
+  avoid-fire: true
+  require-solid-ground: true
+  border-margin: 16
+  respect-world-border: true
+  load-chunks: false
+
+messages:
+  prefix: '<dark_gray>[<light_purple>SuperRTPQ</light_purple>]</dark_gray> '
+  joined: '<green>You joined the RTP queue. Position: <white>%position%</white>/<white>%size%</white>.</green>'
+  already-queued: '<yellow>You are already in the RTP queue.</yellow>'
+  left: '<yellow>You left the RTP queue.</yellow>'
+  not-queued: '<red>You are not in the RTP queue.</red>'
+  queue-full: '<red>The RTP queue is full. Try again later.</red>'
+  queue-disabled: '<red>The RTP queue is currently disabled.</red>'
+  cooldown: '<red>Please wait <white>%seconds%</white> seconds before using RTP again.</red>'
+  status: '<gray>Queue: <white>%size%</white>/<white>%max%</white>. Your position: <white>%position%</white>.</gray>'
+  searching: '<gray>Finding a safe random location...</gray>'
+  countdown: '<light_purple>Teleporting in <white>%seconds%</white>...</light_purple>'
+  teleported: '<green>Random teleport complete!</green>'
+  failed: '<red>Could not find a safe location. You have been returned to the queue.</red>'
+  no-world: '<red>No configured RTP world is available.</red>'
+  no-permission: '<red>You do not have permission to do that.</red>'
+  player-only: '<red>This command can only be used in-game.</red>'
+  admin-usage: '<yellow>Usage: /rtpq <status|clearqueue|remove|forceteleport|reload|debug></yellow>'
+  queue-cleared: '<yellow>The RTP queue has been cleared.</yellow>'
+  player-removed: '<yellow>Removed <white>%player%</white> from the queue.</yellow>'
+  reload: '<green>SuperRTPQ configuration reloaded.</green>'
+  debug-on: '<green>Debug logging enabled.</green>'
+  debug-off: '<yellow>Debug logging disabled.</yellow>'
+
+debug: false
