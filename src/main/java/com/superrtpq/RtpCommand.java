@@ -53,13 +53,13 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
 
         if (!(sender instanceof Player player)) { messages.send(sender, "player-only"); return true; }
         if (!player.hasPermission("superrtpq.use")) { messages.send(player, "no-permission"); return true; }
-        String action = args.length == 0 ? "now" : args[0].toLowerCase();
+        String action = args.length == 0 ? "gui" : args[0].toLowerCase();
         if (action.equals("gui") || action.equals("menu")) {
             openRtpGui(player);
         } else if (action.equals("now") || action.equals("random")) {
             performInstantRtp(player);
         } else {
-            player.sendMessage("§dRandom Teleport §7Usage: §f/rtp [now|gui]");
+            player.sendMessage("§dRandom Teleport §7Usage: §f/rtp [gui|now]");
         }
         return true;
     }
@@ -177,7 +177,7 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         if (command.getName().equalsIgnoreCase("rtpq")) {
             if (args.length == 1) return matching(args[0], List.of("gui", "join", "leave", "status", "admin"));
             if (args.length == 2 && args[0].equalsIgnoreCase("admin")) return matching(args[1], List.of("status", "clearqueue", "remove", "forceteleport", "reload", "debug"));
-        } else if (args.length == 1) return matching(args[0], List.of("now", "gui"));
+        } else if (args.length == 1) return matching(args[0], List.of("gui", "now"));
         return List.of();
     }
 
