@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.superrtpq</groupId>
   <artifactId>superrtpq</artifactId>
-  <version>0.2.1</version>
+  <version>0.2.2</version>
   <name>SuperRTPQ</name>
   <description>Dimension-aware random teleportation and 1v1 RTP matchmaking for Paper and Purpur.</description>
   <properties>
