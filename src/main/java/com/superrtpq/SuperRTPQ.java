@@ -11,6 +11,7 @@ public final class SuperRTPQ extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        saveResourceIfMissing("gui.yml");
         debug = getConfig().getBoolean("debug", false);
         teleportService = new TeleportService(this);
         queueManager = new QueueManager(this, teleportService);
@@ -21,6 +22,17 @@ public final class SuperRTPQ extends JavaPlugin {
         getServer().getPluginManager().registerEvents(handler, this);
         queueManager.start();
         getLogger().info("SuperRTPQ enabled: RTP, queue and inventory GUI registered.");
+    }
+
+    private void saveResourceIfMissing(String path) {
+        java.io.File target = new java.io.File(getDataFolder(), path);
+        if (target.exists()) return;
+        java.io.File parent = target.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            getLogger().severe("Could not create configuration directory for " + path);
+            return;
+        }
+        saveResource(path, false);
     }
 
     private void registerCommand(String name, RtpCommand handler) {
