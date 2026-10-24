@@ -3,11 +3,11 @@ version: 0.2.0
 main: com.superrtpq.SuperRTPQ
 api-version: '1.21'
 authors: [univer404]
-description: Standalone random teleport and RTP queue with separate GUIs.
+description: Dimension-aware random teleportation and 1v1 RTP matchmaking with separate GUIs.
 commands:
   rtp:
     description: Random teleport command and GUI.
-    usage: /rtp [now|gui]
+    usage: /rtp [gui|now|overworld|nether|end]
     aliases: [randomteleport]
   rtpq:
     description: RTP queue command and separate GUI.
