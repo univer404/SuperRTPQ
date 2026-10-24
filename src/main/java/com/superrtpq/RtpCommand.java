@@ -1,5 +1,7 @@
 package com.superrtpq;
 
+import com.superrtpq.util.GuiText;
+
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -127,8 +129,8 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
     }
 
     private String guiTitle(String menu) {
-        return ChatColor.translateAlternateColorCodes('&', guiConfig().getString(menu + ".title",
-                menu.equals("rtp") ? "&5&lRandom Teleport" : "&5&lRTP Queue"));
+        return guiConfig().getString(menu + ".title",
+                menu.equals("rtp") ? "&5&lRandom Teleport" : "&5&lRTP Queue");
     }
 
     private String borderDescription(World world) {
@@ -138,8 +140,13 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
     }
 
     private Material guiMaterial(YamlConfiguration cfg, String path, Material fallback) {
-        Material material = Material.matchMaterial(cfg.getString(path, fallback.name()));
-        return material == null ? fallback : material;
+        String configured = cfg.getString(path, fallback.name());
+        Material material = configured == null ? null : Material.matchMaterial(configured.trim());
+        if (material == null || !material.isItem()) {
+            plugin.getLogger().warning("Invalid GUI material at gui.yml " + path + ": " + configured + ". Using " + fallback.name() + ".");
+            return fallback;
+        }
+        return material;
     }
 
     private ItemStack configuredItem(YamlConfiguration cfg, String path, Material fallback, Map<String, String> replacements) {
@@ -148,19 +155,19 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         for (Map.Entry<String, String> entry : replacements.entrySet()) name = name.replace(entry.getKey(), entry.getValue());
         ItemStack stack = new ItemStack(material);
         ItemMeta meta = stack.getItemMeta();
-        meta.displayName(LegacyComponentSerializer.legacySection().deserialize(color(name)).decoration(TextDecoration.ITALIC, false));
+        meta.displayName(GuiText.component(name));
         List<String> lore = new ArrayList<>();
         for (String line : cfg.getStringList(path + ".lore")) {
             for (Map.Entry<String, String> entry : replacements.entrySet()) line = line.replace(entry.getKey(), entry.getValue());
-            lore.add(color(line));
+            lore.add(line);
         }
-        meta.lore(lore.stream().map(line -> LegacyComponentSerializer.legacySection().deserialize(line).decoration(TextDecoration.ITALIC, false)).toList());
+        meta.lore(lore.stream().map(GuiText::component).toList());
         stack.setItemMeta(meta);
         return stack;
     }
 
     private String color(String text) {
-        return ChatColor.translateAlternateColorCodes('&', text);
+        return text == null ? "" : text;
     }
 
     private int itemSlot(YamlConfiguration cfg, String path, int fallback) {
@@ -174,8 +181,8 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         List<String> lore = cfg.getStringList(path + ".lore");
         ItemStack filler = new ItemStack(material);
         ItemMeta meta = filler.getItemMeta();
-        meta.displayName(LegacyComponentSerializer.legacySection().deserialize(color(name)).decoration(TextDecoration.ITALIC, false));
-        meta.lore(lore.stream().map(line -> LegacyComponentSerializer.legacySection().deserialize(color(line)).decoration(TextDecoration.ITALIC, false)).toList());
+        meta.displayName(GuiText.component(name));
+        meta.lore(lore.stream().map(GuiText::component).toList());
         filler.setItemMeta(meta);
         for (int slot : cfg.getIntegerList(path + ".slots")) {
             if (slot >= 0 && slot < inv.getSize()) inv.setItem(slot, filler);
@@ -186,7 +193,7 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         YamlConfiguration cfg = guiConfig();
         int size = cfg.getInt("rtp.size", 27);
         if (size < 9 || size > 54 || size % 9 != 0) size = 27;
-        Inventory inv = Bukkit.createInventory(null, size, LegacyComponentSerializer.legacySection().deserialize(color(guiTitle("rtp"))).decoration(TextDecoration.ITALIC, false));
+        Inventory inv = Bukkit.createInventory(null, size, GuiText.component(guiTitle("rtp")));
         fillMenu(inv, cfg, "rtp.filler", Material.PURPLE_STAINED_GLASS_PANE);
         for (String dimension : List.of("overworld", "nether", "end")) {
             Material fallback = switch (dimension) {
@@ -213,7 +220,7 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         YamlConfiguration cfg = guiConfig();
         int size = cfg.getInt("queue.size", 27);
         if (size < 9 || size > 54 || size % 9 != 0) size = 27;
-        Inventory inv = Bukkit.createInventory(null, size, LegacyComponentSerializer.legacySection().deserialize(color(guiTitle("queue"))).decoration(TextDecoration.ITALIC, false));
+        Inventory inv = Bukkit.createInventory(null, size, GuiText.component(guiTitle("queue")));
         fillMenu(inv, cfg, "queue.filler", Material.BLACK_STAINED_GLASS_PANE);
         int position = queue.position(player.getUniqueId());
         Map<String, String> replacements = Map.of("%queue_size%", String.valueOf(queue.size()),
@@ -234,9 +241,9 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         YamlConfiguration cfg = guiConfig();
         String title = event.getView().getTitle();
-        String rtpTitle = ChatColor.stripColor(guiTitle("rtp"));
-        String queueTitle = ChatColor.stripColor(guiTitle("queue"));
-        if (!ChatColor.stripColor(title).equals(rtpTitle) && !ChatColor.stripColor(title).equals(queueTitle)) return;
+        String rtpTitle = GuiText.plain(guiTitle("rtp"));
+        String queueTitle = GuiText.plain(guiTitle("queue"));
+        if (!GuiText.plain(title).equals(rtpTitle) && !ChatColor.stripColor(title).equals(queueTitle)) return;
         event.setCancelled(true);
         if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) return;
         if (ChatColor.stripColor(title).equals(rtpTitle)) {
