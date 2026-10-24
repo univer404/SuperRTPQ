@@ -141,7 +141,10 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
 
     private Material guiMaterial(YamlConfiguration cfg, String path, Material fallback) {
         String configured = cfg.getString(path, fallback.name());
-        Material material = configured == null ? null : Material.matchMaterial(configured.trim());
+        String materialName = configured == null ? "" : configured.trim();
+        if (materialName.regionMatches(true, 0, "minecraft:", 0, 10)) materialName = materialName.substring(10);
+        materialName = materialName.replace(' ', '_');
+        Material material = Material.matchMaterial(materialName);
         if (material == null || !material.isItem()) {
             plugin.getLogger().warning("Invalid GUI material at gui.yml " + path + ": " + configured + ". Using " + fallback.name() + ".");
             return fallback;
@@ -243,10 +246,10 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         String title = event.getView().getTitle();
         String rtpTitle = GuiText.plain(guiTitle("rtp"));
         String queueTitle = GuiText.plain(guiTitle("queue"));
-        if (!GuiText.plain(title).equals(rtpTitle) && !ChatColor.stripColor(title).equals(queueTitle)) return;
+        if (!GuiText.plain(title).equals(rtpTitle) && !GuiText.plain(title).equals(queueTitle)) return;
         event.setCancelled(true);
         if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) return;
-        if (ChatColor.stripColor(title).equals(rtpTitle)) {
+        if (GuiText.plain(title).equals(rtpTitle)) {
             if (event.getRawSlot() == itemSlot(cfg, "rtp.items.overworld", 10)) { player.closeInventory(); performInstantRtp(player, "overworld"); }
             else if (event.getRawSlot() == itemSlot(cfg, "rtp.items.nether", 13)) { player.closeInventory(); performInstantRtp(player, "nether"); }
             else if (event.getRawSlot() == itemSlot(cfg, "rtp.items.end", 16)) { player.closeInventory(); performInstantRtp(player, "end"); }
