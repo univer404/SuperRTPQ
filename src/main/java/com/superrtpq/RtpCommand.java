@@ -4,6 +4,9 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -21,6 +24,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.io.File;
 
 final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
     private static final String RTP_GUI = "Random Teleport";
@@ -116,83 +120,136 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         };
     }
 
-    private String borderDescription(World world) {
-        if (world == null) return "§cWorld not loaded / not configured";
-        double size = world.getWorldBorder().getSize();
-        return "§7Border: §f" + String.format(java.util.Locale.US, "%.0f", size) + " × " + String.format(java.util.Locale.US, "%.0f", size) + " blocks";
+    private YamlConfiguration guiConfig() {
+        File file = new File(plugin.getDataFolder(), "gui.yml");
+        if (!file.exists()) plugin.saveResource("gui.yml", false);
+        return YamlConfiguration.loadConfiguration(file);
     }
 
-    private ItemStack dimensionItem(Material material, String dimension, String subtitle, String badge) {
-        World world = getDimensionWorld(dimension);
-        String worldName = world == null ? defaultWorldName(dimension) : world.getName();
-        return item(material, "§d§l" + dimensionName(dimension),
-                "§8" + badge,
-                "§7" + subtitle,
-                "§8&m----------------",
-                "§7Target world: §f" + worldName,
-                borderDescription(world),
-                "§7Safe-location checks enabled",
-                world == null ? "§cWorld is not loaded" : "§a▶ Click to begin RTP");
+    private String guiTitle(String menu) {
+        return ChatColor.translateAlternateColorCodes('&', guiConfig().getString(menu + ".title",
+                menu.equals("rtp") ? "&5&lRandom Teleport" : "&5&lRTP Queue"));
+    }
+
+    private String borderDescription(World world) {
+        if (world == null) return "&cWorld not loaded / not configured";
+        double size = world.getWorldBorder().getSize();
+        return "&7Border: &f" + String.format(java.util.Locale.US, "%.0f", size) + " × " + String.format(java.util.Locale.US, "%.0f", size) + " blocks";
+    }
+
+    private Material guiMaterial(YamlConfiguration cfg, String path, Material fallback) {
+        Material material = Material.matchMaterial(cfg.getString(path, fallback.name()));
+        return material == null ? fallback : material;
+    }
+
+    private ItemStack configuredItem(YamlConfiguration cfg, String path, Material fallback, Map<String, String> replacements) {
+        Material material = guiMaterial(cfg, path + ".material", fallback);
+        String name = cfg.getString(path + ".name", "&dSuperRTPQ");
+        for (Map.Entry<String, String> entry : replacements.entrySet()) name = name.replace(entry.getKey(), entry.getValue());
+        ItemStack stack = new ItemStack(material);
+        ItemMeta meta = stack.getItemMeta();
+        meta.displayName(LegacyComponentSerializer.legacySection().deserialize(color(name)).decoration(TextDecoration.ITALIC, false));
+        List<String> lore = new ArrayList<>();
+        for (String line : cfg.getStringList(path + ".lore")) {
+            for (Map.Entry<String, String> entry : replacements.entrySet()) line = line.replace(entry.getKey(), entry.getValue());
+            lore.add(color(line));
+        }
+        meta.lore(lore.stream().map(line -> LegacyComponentSerializer.legacySection().deserialize(line).decoration(TextDecoration.ITALIC, false)).toList());
+        stack.setItemMeta(meta);
+        return stack;
+    }
+
+    private String color(String text) {
+        return ChatColor.translateAlternateColorCodes('&', text);
+    }
+
+    private int itemSlot(YamlConfiguration cfg, String path, int fallback) {
+        return cfg.getInt(path + ".slot", fallback);
+    }
+
+    private void fillMenu(Inventory inv, YamlConfiguration cfg, String path, Material fallback) {
+        if (!cfg.getBoolean(path + ".enabled", true)) return;
+        Material material = guiMaterial(cfg, path + ".material", fallback);
+        String name = cfg.getString(path + ".name", "&8 ");
+        List<String> lore = cfg.getStringList(path + ".lore");
+        ItemStack filler = new ItemStack(material);
+        ItemMeta meta = filler.getItemMeta();
+        meta.displayName(LegacyComponentSerializer.legacySection().deserialize(color(name)).decoration(TextDecoration.ITALIC, false));
+        meta.lore(lore.stream().map(line -> LegacyComponentSerializer.legacySection().deserialize(color(line)).decoration(TextDecoration.ITALIC, false)).toList());
+        filler.setItemMeta(meta);
+        for (int slot : cfg.getIntegerList(path + ".slots")) {
+            if (slot >= 0 && slot < inv.getSize()) inv.setItem(slot, filler);
+        }
     }
 
     private void openRtpGui(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 27, Component.text(RTP_GUI).decoration(TextDecoration.ITALIC, false));
-        for (int slot = 0; slot < inv.getSize(); slot++) {
-            if (slot < 9 || slot >= 18) inv.setItem(slot, item(Material.PURPLE_STAINED_GLASS_PANE, "§5 ", "§8SuperRTPQ"));
+        YamlConfiguration cfg = guiConfig();
+        int size = cfg.getInt("rtp.size", 27);
+        if (size < 9 || size > 54 || size % 9 != 0) size = 27;
+        Inventory inv = Bukkit.createInventory(null, size, Component.text(guiTitle("rtp")).decoration(TextDecoration.ITALIC, false));
+        fillMenu(inv, cfg, "rtp.filler", Material.PURPLE_STAINED_GLASS_PANE);
+        for (String dimension : List.of("overworld", "nether", "end")) {
+            Material fallback = switch (dimension) {
+                case "nether" -> Material.NETHERRACK;
+                case "end" -> Material.END_STONE;
+                default -> Material.GRASS_BLOCK;
+            };
+            World world = getDimensionWorld(dimension);
+            String worldName = world == null ? defaultWorldName(dimension) : world.getName();
+            Map<String, String> replacements = Map.of("%world%", worldName, "%border%", color(borderDescription(world)));
+            String path = "rtp.items." + dimension;
+            int fallbackSlot = dimension.equals("overworld") ? 10 : dimension.equals("nether") ? 13 : 16;
+            int slot = itemSlot(cfg, path, fallbackSlot);
+            if (slot >= 0 && slot < inv.getSize()) inv.setItem(slot, configuredItem(cfg, path, fallback, replacements));
         }
-        inv.setItem(10, dimensionItem(Material.GRASS_BLOCK, "overworld", "Explore a random safe spot.", "§aNORMAL WORLD"));
-        inv.setItem(13, dimensionItem(Material.NETHERRACK, "nether", "Find a random spot in the Nether.", "§cDANGEROUS DIMENSION"));
-        inv.setItem(16, dimensionItem(Material.END_STONE, "end", "Travel to a random spot in The End.", "§5THE END"));
-        inv.setItem(22, item(Material.BARRIER, "§cClose Menu", "§7Return to the game."));
+        String closePath = "rtp.items.close";
+        int closeSlot = itemSlot(cfg, closePath, 22);
+        if (closeSlot >= 0 && closeSlot < inv.getSize()) inv.setItem(closeSlot,
+                configuredItem(cfg, closePath, Material.BARRIER, Map.of()));
         player.openInventory(inv);
     }
 
     private void openQueueGui(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 27, Component.text(QUEUE_GUI).decoration(TextDecoration.ITALIC, false));
+        YamlConfiguration cfg = guiConfig();
+        int size = cfg.getInt("queue.size", 27);
+        if (size < 9 || size > 54 || size % 9 != 0) size = 27;
+        Inventory inv = Bukkit.createInventory(null, size, Component.text(guiTitle("queue")).decoration(TextDecoration.ITALIC, false));
+        fillMenu(inv, cfg, "queue.filler", Material.BLACK_STAINED_GLASS_PANE);
         int position = queue.position(player.getUniqueId());
-        for (int slot = 0; slot < inv.getSize(); slot++) {
-            if (slot < 9 || slot >= 18) inv.setItem(slot, item(Material.BLACK_STAINED_GLASS_PANE, "§8 ", "§8SuperRTPQ"));
+        Map<String, String> replacements = Map.of("%queue_size%", String.valueOf(queue.size()),
+                "%position%", position == 0 ? "Not queued" : "#" + position);
+        String[][] items = {{"join", "LIME_DYE", "10"}, {"status", "PLAYER_HEAD", "13"},
+                {"leave", "RED_DYE", "16"}, {"instant-rtp", "COMPASS", "22"}};
+        for (String[] item : items) {
+            String path = "queue.items." + item[0];
+            int slot = itemSlot(cfg, path, Integer.parseInt(item[2]));
+            if (slot >= 0 && slot < inv.getSize()) inv.setItem(slot,
+                    configuredItem(cfg, path, Material.valueOf(item[1]), replacements));
         }
-        inv.setItem(10, item(Material.LIME_DYE, "§a§lFind a Match", "§7Queue for a random 1v1 encounter.", "§7Queue size: §f" + queue.size(), "§7Your position: §f" + (position == 0 ? "Not queued" : "#" + position), "§8&m----------------", "§a▶ Click to join"));
-        inv.setItem(13, item(Material.PLAYER_HEAD, "§d§lQueue Status", "§7Players waiting: §f" + queue.size(), "§7Your position: §f" + (position == 0 ? "Not queued" : "#" + position), "§8Matches start when two players are ready."));
-        inv.setItem(16, item(Material.RED_DYE, "§c§lLeave Queue", "§7Cancel your matchmaking search.", "§c▶ Click to leave"));
-        inv.setItem(22, item(Material.COMPASS, "§b§lInstant RTP", "§7Explore without entering matchmaking.", "§7Open the dimension selector.", "§a▶ Click to open"));
         player.openInventory(inv);
-    }
-
-    private ItemStack item(Material material, String name, String... lore) {
-        ItemStack stack = new ItemStack(material);
-        ItemMeta meta = stack.getItemMeta();
-        meta.displayName(LegacyComponentSerializer.legacySection().deserialize(name).decoration(TextDecoration.ITALIC, false));
-        meta.lore(List.of(lore).stream().map(line -> LegacyComponentSerializer.legacySection().deserialize(line).decoration(TextDecoration.ITALIC, false)).toList());
-        stack.setItemMeta(meta);
-        return stack;
     }
 
     @EventHandler
     public void onGuiClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
+        YamlConfiguration cfg = guiConfig();
         String title = event.getView().getTitle();
-        if (!title.equals(RTP_GUI) && !title.equals(QUEUE_GUI)) return;
+        String rtpTitle = ChatColor.stripColor(guiTitle("rtp"));
+        String queueTitle = ChatColor.stripColor(guiTitle("queue"));
+        if (!ChatColor.stripColor(title).equals(rtpTitle) && !ChatColor.stripColor(title).equals(queueTitle)) return;
         event.setCancelled(true);
         if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) return;
-        if (title.equals(RTP_GUI)) {
-            switch (event.getRawSlot()) {
-                case 10 -> { player.closeInventory(); performInstantRtp(player, "overworld"); }
-                case 13 -> { player.closeInventory(); performInstantRtp(player, "nether"); }
-                case 16 -> { player.closeInventory(); performInstantRtp(player, "end"); }
-                case 22 -> player.closeInventory();
-                default -> { }
-            }
+        if (ChatColor.stripColor(title).equals(rtpTitle)) {
+            if (event.getRawSlot() == itemSlot(cfg, "rtp.items.overworld", 10)) { player.closeInventory(); performInstantRtp(player, "overworld"); }
+            else if (event.getRawSlot() == itemSlot(cfg, "rtp.items.nether", 13)) { player.closeInventory(); performInstantRtp(player, "nether"); }
+            else if (event.getRawSlot() == itemSlot(cfg, "rtp.items.end", 16)) { player.closeInventory(); performInstantRtp(player, "end"); }
+            else if (event.getRawSlot() == itemSlot(cfg, "rtp.items.close", 22)) player.closeInventory();
             return;
         }
-        switch (event.getRawSlot()) {
-            case 10 -> { player.closeInventory(); queue.join(player); }
-            case 13 -> { player.closeInventory(); sendQueueStatus(player); }
-            case 16 -> { player.closeInventory(); queue.leave(player); }
-            case 22 -> { player.closeInventory(); openRtpGui(player); }
-            default -> { }
-        }
+        if (event.getRawSlot() == itemSlot(cfg, "queue.items.join", 10)) { player.closeInventory(); queue.join(player); }
+        else if (event.getRawSlot() == itemSlot(cfg, "queue.items.status", 13)) { player.closeInventory(); sendQueueStatus(player); }
+        else if (event.getRawSlot() == itemSlot(cfg, "queue.items.leave", 16)) { player.closeInventory(); queue.leave(player); }
+        else if (event.getRawSlot() == itemSlot(cfg, "queue.items.instant-rtp", 22)) { player.closeInventory(); openRtpGui(player); }
     }
 
     private void sendQueueStatus(Player player) {
