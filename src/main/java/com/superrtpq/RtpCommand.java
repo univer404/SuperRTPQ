@@ -186,7 +186,7 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         YamlConfiguration cfg = guiConfig();
         int size = cfg.getInt("rtp.size", 27);
         if (size < 9 || size > 54 || size % 9 != 0) size = 27;
-        Inventory inv = Bukkit.createInventory(null, size, Component.text(guiTitle("rtp")).decoration(TextDecoration.ITALIC, false));
+        Inventory inv = Bukkit.createInventory(null, size, LegacyComponentSerializer.legacySection().deserialize(color(guiTitle("rtp"))).decoration(TextDecoration.ITALIC, false));
         fillMenu(inv, cfg, "rtp.filler", Material.PURPLE_STAINED_GLASS_PANE);
         for (String dimension : List.of("overworld", "nether", "end")) {
             Material fallback = switch (dimension) {
@@ -213,7 +213,7 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         YamlConfiguration cfg = guiConfig();
         int size = cfg.getInt("queue.size", 27);
         if (size < 9 || size > 54 || size % 9 != 0) size = 27;
-        Inventory inv = Bukkit.createInventory(null, size, Component.text(guiTitle("queue")).decoration(TextDecoration.ITALIC, false));
+        Inventory inv = Bukkit.createInventory(null, size, LegacyComponentSerializer.legacySection().deserialize(color(guiTitle("queue"))).decoration(TextDecoration.ITALIC, false));
         fillMenu(inv, cfg, "queue.filler", Material.BLACK_STAINED_GLASS_PANE);
         int position = queue.position(player.getUniqueId());
         Map<String, String> replacements = Map.of("%queue_size%", String.valueOf(queue.size()),
