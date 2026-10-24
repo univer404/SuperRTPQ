@@ -73,8 +73,30 @@ public final class TeleportService {
         return null;
     }
 
+    public boolean isSafeLanding(Location location) {
+        if (location == null || location.getWorld() == null) return false;
+        World world = location.getWorld();
+        if (plugin.getConfig().getBoolean("rtp.respect-world-border", true)
+                && !world.getWorldBorder().isInside(location)) return false;
+        int x = location.getBlockX();
+        int y = location.getBlockY();
+        int z = location.getBlockZ();
+        if (y <= world.getMinHeight() || y + 1 >= world.getMaxHeight()) return false;
+        Block ground = world.getBlockAt(x, y - 1, z);
+        Block feet = world.getBlockAt(x, y, z);
+        Block head = world.getBlockAt(x, y + 1, z);
+        if (!ground.getType().isSolid() || ground.isPassable()) return false;
+        if (!feet.isPassable() || !head.isPassable()) return false;
+        if (plugin.getConfig().getBoolean("rtp.avoid-water", true)
+                && (isWater(ground) || isWater(feet) || isWater(head))) return false;
+        if (plugin.getConfig().getBoolean("rtp.avoid-lava", true)
+                && (isLava(ground) || isLava(feet) || isLava(head))) return false;
+        return !plugin.getConfig().getBoolean("rtp.avoid-fire", true)
+                || !(isHazard(ground) || isHazard(feet) || isHazard(head));
+    }
+
     public boolean teleport(Player player, Location destination) {
-        return destination != null && player.teleport(destination);
+        return destination != null && isSafeLanding(destination) && player.teleport(destination);
     }
 
     private boolean isWater(Block b) { return b.getType() == Material.WATER || b.getType() == Material.BUBBLE_COLUMN; }
