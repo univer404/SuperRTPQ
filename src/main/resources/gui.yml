@@ -1,0 +1,103 @@
+# SuperRTPQ GUI configuration
+# Edit titles, sizes, filler, item slots, materials, names and lore.
+# Material names must be valid Bukkit materials. Use legacy color codes such as &d, &7, &l.
+# Changes apply when a menu is opened again; use /rtpq reload to reload plugin settings.
+
+rtp:
+  title: "&5&lRandom Teleport"
+  size: 27
+  filler:
+    enabled: true
+    material: PURPLE_STAINED_GLASS_PANE
+    name: "&5 "
+    lore:
+      - "&8SuperRTPQ"
+    slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+  items:
+    overworld:
+      slot: 10
+      material: GRASS_BLOCK
+      name: "&a&lOverworld"
+      lore:
+        - "&8NORMAL WORLD"
+        - "&7Explore a random safe spot."
+        - "&8&m----------------"
+        - "&7Target world: &f%world%"
+        - "%border%"
+        - "&7Safe-location checks enabled"
+        - "&a▶ Click to begin RTP"
+    nether:
+      slot: 13
+      material: NETHERRACK
+      name: "&c&lNether"
+      lore:
+        - "&cDANGEROUS DIMENSION"
+        - "&7Find a random spot in the Nether."
+        - "&8&m----------------"
+        - "&7Target world: &f%world%"
+        - "%border%"
+        - "&7Safe-location checks enabled"
+        - "&a▶ Click to begin RTP"
+    end:
+      slot: 16
+      material: END_STONE
+      name: "&5&lThe End"
+      lore:
+        - "&5THE END"
+        - "&7Travel to a random spot in The End."
+        - "&8&m----------------"
+        - "&7Target world: &f%world%"
+        - "%border%"
+        - "&7Safe-location checks enabled"
+        - "&a▶ Click to begin RTP"
+    close:
+      slot: 22
+      material: BARRIER
+      name: "&cClose Menu"
+      lore:
+        - "&7Return to the game."
+
+queue:
+  title: "&5&lRTP Queue"
+  size: 27
+  filler:
+    enabled: true
+    material: BLACK_STAINED_GLASS_PANE
+    name: "&8 "
+    lore:
+      - "&8SuperRTPQ"
+    slots: [0, 1, 2, 3, 4, 5, 6, 7, 8, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+  items:
+    join:
+      slot: 10
+      material: LIME_DYE
+      name: "&a&lFind a Match"
+      lore:
+        - "&7Queue for a random 1v1 encounter."
+        - "&7Queue size: &f%queue_size%"
+        - "&7Your position: &f%position%"
+        - "&8&m----------------"
+        - "&a▶ Click to join"
+    status:
+      slot: 13
+      material: PLAYER_HEAD
+      name: "&d&lQueue Status"
+      lore:
+        - "&7Players waiting: &f%queue_size%"
+        - "&7Your position: &f%position%"
+        - "&8Matches start when two players are ready."
+    leave:
+      slot: 16
+      material: RED_DYE
+      name: "&c&lLeave Queue"
+      lore:
+        - "&7Cancel your matchmaking search."
+        - "&c▶ Click to leave"
+    instant-rtp:
+      slot: 22
+      material: COMPASS
+      name: "&b&lInstant RTP"
+      lore:
+        - "&7Explore without entering matchmaking."
+        - "&7Open the dimension selector."
+        - "&a▶ Click to open"
