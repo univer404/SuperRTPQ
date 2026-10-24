@@ -1,6 +1,7 @@
 # SuperRTPQ GUI configuration
 # Edit titles, sizes, filler, item slots, materials, names and lore.
-# Material names must be valid Bukkit materials. Use legacy color codes such as &d, &7, &l.
+# Text formats: MiniMessage tags (<#RRGGBB>, <gradient:#...:#...>, <rainbow>, <bold>, <italic>, etc.), legacy &a/&l codes, RGB &#RRGGBB and &x&F&F&0&0&A&A are supported.
+# Materials: use valid Bukkit material names such as DIAMOND_BLOCK, minecraft:diamond_block, or RED_STAINED_GLASS_PANE.
 # Changes apply when a menu is opened again; use /rtpq reload to reload plugin settings.
 
 rtp:
