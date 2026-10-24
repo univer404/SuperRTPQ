@@ -122,33 +122,41 @@ final class RtpCommand implements CommandExecutor, TabCompleter, Listener {
         return "§7Border: §f" + String.format(java.util.Locale.US, "%.0f", size) + " × " + String.format(java.util.Locale.US, "%.0f", size) + " blocks";
     }
 
-    private ItemStack dimensionItem(Material material, String dimension, String subtitle) {
+    private ItemStack dimensionItem(Material material, String dimension, String subtitle, String badge) {
         World world = getDimensionWorld(dimension);
         String worldName = world == null ? defaultWorldName(dimension) : world.getName();
         return item(material, "§d§l" + dimensionName(dimension),
+                "§8" + badge,
                 "§7" + subtitle,
-                "§7World: §f" + worldName,
+                "§8&m----------------",
+                "§7Target world: §f" + worldName,
                 borderDescription(world),
-                "§8Uses this world's world border.",
-                world == null ? "§cClick unavailable until world is loaded" : "§aClick to teleport");
+                "§7Safe-location checks enabled",
+                world == null ? "§cWorld is not loaded" : "§a▶ Click to begin RTP");
     }
 
     private void openRtpGui(Player player) {
         Inventory inv = Bukkit.createInventory(null, 27, Component.text(RTP_GUI).decoration(TextDecoration.ITALIC, false));
-        inv.setItem(10, dimensionItem(Material.GRASS_BLOCK, "overworld", "Random teleport in the normal world."));
-        inv.setItem(13, dimensionItem(Material.NETHERRACK, "nether", "Random teleport in the Nether."));
-        inv.setItem(16, dimensionItem(Material.END_STONE, "end", "Random teleport in The End."));
-        inv.setItem(22, item(Material.BARRIER, "§cClose", "§7Close this menu."));
+        for (int slot = 0; slot < inv.getSize(); slot++) {
+            if (slot < 9 || slot >= 18) inv.setItem(slot, item(Material.PURPLE_STAINED_GLASS_PANE, "§5 ", "§8SuperRTPQ"));
+        }
+        inv.setItem(10, dimensionItem(Material.GRASS_BLOCK, "overworld", "Explore a random safe spot.", "§aNORMAL WORLD"));
+        inv.setItem(13, dimensionItem(Material.NETHERRACK, "nether", "Find a random spot in the Nether.", "§cDANGEROUS DIMENSION"));
+        inv.setItem(16, dimensionItem(Material.END_STONE, "end", "Travel to a random spot in The End.", "§5THE END"));
+        inv.setItem(22, item(Material.BARRIER, "§cClose Menu", "§7Return to the game."));
         player.openInventory(inv);
     }
 
     private void openQueueGui(Player player) {
         Inventory inv = Bukkit.createInventory(null, 27, Component.text(QUEUE_GUI).decoration(TextDecoration.ITALIC, false));
         int position = queue.position(player.getUniqueId());
-        inv.setItem(10, item(Material.LIME_DYE, "§a§lJoin Queue", "§7Join the RTP 1v1 queue.", "§7Your position: §f" + (position == 0 ? "Not queued" : position), "§aClick to join"));
-        inv.setItem(13, item(Material.PAPER, "§d§lQueue Status", "§7Players waiting: §f" + queue.size(), "§7Your position: §f" + (position == 0 ? "Not queued" : position)));
-        inv.setItem(16, item(Material.RED_DYE, "§c§lLeave Queue", "§7Leave the RTP 1v1 queue.", "§cClick to leave"));
-        inv.setItem(22, item(Material.COMPASS, "§b§lRandom Teleport", "§7For instant RTP, use §f/rtp§7.", "§7This menu is only for queue actions."));
+        for (int slot = 0; slot < inv.getSize(); slot++) {
+            if (slot < 9 || slot >= 18) inv.setItem(slot, item(Material.BLACK_STAINED_GLASS_PANE, "§8 ", "§8SuperRTPQ"));
+        }
+        inv.setItem(10, item(Material.LIME_DYE, "§a§lFind a Match", "§7Queue for a random 1v1 encounter.", "§7Queue size: §f" + queue.size(), "§7Your position: §f" + (position == 0 ? "Not queued" : "#" + position), "§8&m----------------", "§a▶ Click to join"));
+        inv.setItem(13, item(Material.PLAYER_HEAD, "§d§lQueue Status", "§7Players waiting: §f" + queue.size(), "§7Your position: §f" + (position == 0 ? "Not queued" : "#" + position), "§8Matches start when two players are ready."));
+        inv.setItem(16, item(Material.RED_DYE, "§c§lLeave Queue", "§7Cancel your matchmaking search.", "§c▶ Click to leave"));
+        inv.setItem(22, item(Material.COMPASS, "§b§lInstant RTP", "§7Explore without entering matchmaking.", "§7Open the dimension selector.", "§a▶ Click to open"));
         player.openInventory(inv);
     }
 
